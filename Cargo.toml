@@ -2,7 +2,7 @@
 name = "cargo-upstall"
 version = "0.1.0"
 authors = ["robert masen <r@robertmasen.pizza>"]
-descripton = "A wrapper around cargo install that handles upgrades instead of failing"
+description = "A wrapper around cargo install that handles upgrades instead of failing"
 license = "MIT"
 
 [dependencies]
