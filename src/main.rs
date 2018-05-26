@@ -50,31 +50,45 @@ struct Args {
 }
 
 fn main() {
+    // parse argumenst
     let args: Args = Docopt::new(USAGE)
                         .and_then(|d| d.deserialize())
                         .unwrap_or_else(|e| e.exit());
+    // If flag help, just show that and exit
     if args.flag_help || args.flag_h {
         println!("{}", USAGE);
         exit(0);
     }
+    // If version, just show that and exit
     if args.flag_version || args.flag_v {
         println!("cargo-upstall {}", get_version_from_toml(MYCONFIG));
         exit(0);
     }
     let action = if let Some(installed) = get_installed_commands() {
-        let mut act = Action::Install {force: false, version: args.flag_max.clone() };//if nothing is found we can just install as normal
-        for cmd in installed {
-            if cmd.name == args.arg_command {
-                //If we find something check the installed command against
-                //the max arg and crates.io
-                act = check_version(&cmd, args.flag_max).expect("Failed to check version");
-                break;
+        // The default action to take would be
+        // not to force and just pass over the
+        // max flag
+        let mut act = Action::Install {
+            force: false,
+            version: args.flag_max.clone()
+        };
+        // Try and find an installed command
+        if let Some(cmd) = installed.iter().find(|c| c.name == args.arg_command) {
+            // If we find a command we want to check it agains crates.io using
+            // the max value as an optional upper limit
+            match check_version(&cmd, &args.flag_max) {
+                Ok(action) => act = action,
+                Err(e) => {
+                    eprintln!("Failed to check version {}", e);
+                    exit(1)
+                }
             }
         }
         act
     } else {
+        // If we failed to find
         println!("Unable to find currently installed commands");
-        Action::Nothing
+        exit(0)
     };
     let mut cmd = Cmd::new("cargo");
     cmd.arg("install");
@@ -105,13 +119,20 @@ fn main() {
         Err(e) => eprintln!("Error spawning process {:?}", e),
     };
 }
+/// The action to take based on the
+/// version installed
 #[derive(PartialEq)]
 enum Action {
+    /// Install a new version if force == true then use
+    /// the --force flag if a version is provided
+    /// then pass that to cargo install --version
     Install {force: bool, version: Option<Version> },
+    /// Do not install anything
     Nothing,
 }
-
-fn check_version(command: &Command, max_version: Option<Version>) -> Result<Action, String> {
+/// Check the version of an installed command against
+/// crates.io
+fn check_version(command: &Command, max_version: &Option<Version>) -> Result<Action, String> {
     //currently I don't know know I want to
     //deal with the hashes and whatnot so 
     //just force reinstalling.
@@ -131,10 +152,14 @@ fn check_version(command: &Command, max_version: Option<Version>) -> Result<Acti
         }
     }
     //get the list of versions from crates.io
-    let io_versions = get_crate_versions(&format!("https://crates.io/api/v1/crates/{}", &command.name)).map_err(|e| format!("{:?}", e))?;
+    let io_versions = get_crate_versions(
+        &format!("https://crates.io/api/v1/crates/{}", &command.name))
+            .map_err(|e| format!("{:?}", e))?;
     //get the max version that is <= the max_version if defined
     if let Some(target) = get_max_version(&io_versions, max_version) {
-        if target > &command.version {
+        // If the max version is greater than the installed
+        // command we need up upgrade
+        if target > command.version {
             println!("You have version {} installed, upgrading to {}", &command.version, &target);
             return Ok(Action::Install { force: true, version: Some(target.clone()) })
         }
@@ -144,33 +169,57 @@ fn check_version(command: &Command, max_version: Option<Version>) -> Result<Acti
         Err("Unable to find info on crates.io".into())
     }
 }
-
-fn get_max_version(versions: &Vec<Version>, max: Option<Version>) -> Option<&Version> {
+/// Get the max version from a list of versions provided
+/// by crates.io with an optional upper limit
+fn get_max_version(versions: &Vec<Version>, max: &Option<Version>) -> Option<Version> {
     if let Some(ref max) = max {
-        versions.iter().filter(|v| v <= &max).max()
+        versions.into_iter().filter_map(|v| {
+            if v <= &max {
+                Some(v.clone())
+            } else {
+                None
+            }
+            }).max()
     } else {
-        versions.iter().max()
+        versions.into_iter().max().map(|v| v.clone())
     }
 }
-
+/// Get the list of version from crates.io for
+/// a single crate
 fn get_crate_versions(url: &str) -> Result<Vec<Version>, reqwest::Error> {
     let info: CratesIoEntry = reqwest::get(url)?.json()?;
     Ok(info.versions.iter().map(|e| e.num.clone()).collect())
 }
-
+/// Get a list of currently installed commands located
+/// in the $CARGOHOME/.crates.toml
 fn get_installed_commands() -> Option<Vec<Command>> {
     let base = get_cargo_path()?;
     let toml_path = base.join(".crates.toml");
-    let toml = read_to_string(&toml_path).expect("Unable to read .crates.toml");
-    let installed: Installed = from_str(&toml).expect("Invalid toml value for .crates.toml");
-    Some(installed.commands())
-}
+    // If the crates.toml file doesn't exist
+    // we don't want to try an read it just send
+    // back an empty []
+    if !toml_path.exists() {
+        return Some(vec![])
+    }
+    if let Ok(toml) = read_to_string(&toml_path) {
+        if let Ok(installed) = from_str::<Installed>(&toml) {
+            Some(installed.commands())
+        } else {
+            None
+        }
 
+    } else {
+        None
+    }
+}
+/// Get a version from a Cargo.toml, primarily used for
+/// getting our own version
 fn get_version_from_toml(toml: &str) -> Version {
     let man: Crate = from_str(toml).expect("Invalid toml value for Cargo.toml");
     man.version()
 }
-
+/// Get the cargo path, either from the environment
+/// variable `CARGOHOME` or the default `~/.cargo`
 fn get_cargo_path() -> Option<PathBuf> {
     if let Ok(path) = var("CARGOHOME") {
         Some(PathBuf::from(path))
