@@ -50,6 +50,7 @@ struct Args {
 }
 
 fn main() {
+    println!("{:?}", ::std::env::args());
     // parse argumenst
     let args: Args = Docopt::new(USAGE)
                         .and_then(|d| d.deserialize())
@@ -112,7 +113,7 @@ fn main() {
     match cmd.spawn() {
         Ok(mut c) => {
             match c.wait() {
-                Ok(s) => println!("Process exited with {:?}", s),
+                Ok(s) => ()),
                 Err(e) => eprintln!("Error waiting on process {:?}", e),
             }
         },
