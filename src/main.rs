@@ -113,7 +113,7 @@ fn main() {
     match cmd.spawn() {
         Ok(mut c) => {
             match c.wait() {
-                Ok(s) => ()),
+                Ok(s) => (),
                 Err(e) => eprintln!("Error waiting on process {:?}", e),
             }
         },
