@@ -26,7 +26,7 @@ const USAGE: &str = "
 Cargo Upstall, safely attempts to upgrade or install a Cargo bin
 
 Usage:
-    upstall <command> [options]
+    upstall [options] [command]
     upstall --help | -h
     upstall --version | -v
 
@@ -113,7 +113,7 @@ fn main() {
     match cmd.spawn() {
         Ok(mut c) => {
             match c.wait() {
-                Ok(s) => (),
+                Ok(_) => (),
                 Err(e) => eprintln!("Error waiting on process {:?}", e),
             }
         },
