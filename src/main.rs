@@ -44,7 +44,6 @@ struct Args {
 }
 
 fn main() {
-    println!("{:?}", ::std::env::args());
     // parse argumenst
     let args: Args = Docopt::new(USAGE)
                         .and_then(|d| d.deserialize())
