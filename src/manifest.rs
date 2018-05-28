@@ -8,12 +8,6 @@ pub struct Crate {
     package: Package,
 }
 
-impl Crate {
-    pub fn version(&self) -> Version {
-        self.package.version.clone()
-    }
-}
-
 #[derive(Debug, Deserialize)]
 pub struct Package {
     pub name: String,

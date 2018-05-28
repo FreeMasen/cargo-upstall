@@ -21,14 +21,11 @@ use toml::{from_str};
 mod manifest;
 use manifest::*;
 
-const MYCONFIG: &str = include_str!("../Cargo.toml");
-const USAGE: &str = "
-Cargo Upstall, safely attempts to upgrade or install a Cargo bin
+const USAGE: &str = r#"
+Upstall (update or install) a cargo package
 
 Usage:
-    upstall [options] [command]
-    upstall --help | -h
-    upstall --version | -v
+    cargo upstall <command> [options]
 
 Options:
     -h, --help           Show this message
@@ -36,17 +33,14 @@ Options:
     --max VERSION        A maximum target version
     --git URL            The git repo url if not registered on crates.io
     --features FEATURES  Space-separated list of features to pass to cargo install
-";
+"#;
+
 #[derive(Debug, Deserialize)]
 struct Args {
     arg_command: String,
     flag_max: Option<Version>,
     flag_features: Vec<String>,
     flag_git: Option<String>,
-    flag_help: bool,
-    flag_h: bool,
-    flag_version: bool,
-    flag_v: bool,
 }
 
 fn main() {
@@ -55,16 +49,7 @@ fn main() {
     let args: Args = Docopt::new(USAGE)
                         .and_then(|d| d.deserialize())
                         .unwrap_or_else(|e| e.exit());
-    // If flag help, just show that and exit
-    if args.flag_help || args.flag_h {
-        println!("{}", USAGE);
-        exit(0);
-    }
-    // If version, just show that and exit
-    if args.flag_version || args.flag_v {
-        println!("cargo-upstall {}", get_version_from_toml(MYCONFIG));
-        exit(0);
-    }
+
     let action = if let Some(installed) = get_installed_commands() {
         // The default action to take would be
         // not to force and just pass over the
@@ -113,11 +98,11 @@ fn main() {
     match cmd.spawn() {
         Ok(mut c) => {
             match c.wait() {
-                Ok(_) => (),
-                Err(e) => eprintln!("Error waiting on process {:?}", e),
+                Ok(_) => (), //If successful, just exit
+                Err(e) => eprintln!("Error waiting on cargo install {:?}", e),
             }
         },
-        Err(e) => eprintln!("Error spawning process {:?}", e),
+        Err(e) => eprintln!("Error spawning cargo install {:?}", e),
     };
 }
 /// The action to take based on the
@@ -213,12 +198,7 @@ fn get_installed_commands() -> Option<Vec<Command>> {
         None
     }
 }
-/// Get a version from a Cargo.toml, primarily used for
-/// getting our own version
-fn get_version_from_toml(toml: &str) -> Version {
-    let man: Crate = from_str(toml).expect("Invalid toml value for Cargo.toml");
-    man.version()
-}
+
 /// Get the cargo path, either from the environment
 /// variable `CARGOHOME` or the default `~/.cargo`
 fn get_cargo_path() -> Option<PathBuf> {
