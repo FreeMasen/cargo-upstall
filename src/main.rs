@@ -59,6 +59,7 @@ fn main() {
         };
         // Try and find an installed command
         if let Some(cmd) = installed.iter().find(|c| c.name == args.arg_command) {
+            println!("Found version {}", cmd.version);
             // If we find a command we want to check it against crates.io using
             // the max value as an optional upper limit
             match check_version(&cmd, &args.flag_max) {
@@ -188,6 +189,7 @@ fn get_installed_commands() -> Option<Vec<Command>> {
     // we don't want to try an read it just send
     // back an empty []
     if !toml_path.exists() {
+        println!("Did not find installed commands list at {:?}", toml_path);
         return Some(vec![])
     }
     if let Ok(toml) = read_to_string(&toml_path) {
