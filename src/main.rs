@@ -207,7 +207,7 @@ fn get_installed_commands() -> Option<Vec<Command>> {
 /// Get the cargo path, either from the environment
 /// variable `CARGOHOME` or the default `~/.cargo`
 fn get_cargo_path() -> Option<PathBuf> {
-    if let Ok(path) = var("CARGOHOME") {
+    if let Ok(path) = var("CARGO_HOME") {
         Some(PathBuf::from(path))
     } else {
         let hd = home_dir()?;

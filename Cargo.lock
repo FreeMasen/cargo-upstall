@@ -59,7 +59,7 @@ dependencies = [
 
 [[package]]
 name = "cargo-upstall"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "docopt 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.8.5 (registry+https://github.com/rust-lang/crates.io-index)",
