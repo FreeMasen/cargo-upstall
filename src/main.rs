@@ -44,12 +44,11 @@ struct Args {
 }
 
 fn main() {
-    println!("{:?}", ::std::env::args());
     // parse arguments
     let args: Args = Docopt::new(USAGE)
                         .and_then(|d| d.deserialize())
                         .unwrap_or_else(|e| e.exit());
-
+    println!("Checking for currently installed version of {}", &args.arg_command);
     let action = if let Some(installed) = get_installed_commands() {
         // The default action to take would be
         // not to force and just pass over the
@@ -60,7 +59,7 @@ fn main() {
         };
         // Try and find an installed command
         if let Some(cmd) = installed.iter().find(|c| c.name == args.arg_command) {
-            // If we find a command we want to check it agains crates.io using
+            // If we find a command we want to check it against crates.io using
             // the max value as an optional upper limit
             match check_version(&cmd, &args.flag_max) {
                 Ok(action) => act = action,
@@ -78,6 +77,7 @@ fn main() {
     };
     let mut cmd = Cmd::new("cargo");
     cmd.arg("install");
+    cmd.arg(args.arg_command);
     match action {
         Action::Install {force, version} => {
             if force {
@@ -90,7 +90,10 @@ fn main() {
         Action::Nothing => exit(0)
     }
     if args.flag_features.len() > 0 {
-        cmd.arg(format!(" --features={}", &args.flag_features.join(" ")));
+        cmd.arg("--features");
+        for feat in args.flag_features {
+            cmd.arg(feat);
+        }
     }
     if let Some(url) = args.flag_git {
         cmd.arg(format!(" --git={}", &url));
