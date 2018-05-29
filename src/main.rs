@@ -31,8 +31,8 @@ Options:
     -h, --help           Show this message
     -v, --version        Print the version to the screen
     --max VERSION        A maximum target version
-    --git URL            The git repo url if not registered on crates.io
     --features FEATURES  Space-separated list of features to pass to cargo install
+
 "#;
 
 #[derive(Debug, Deserialize)]
@@ -40,7 +40,6 @@ struct Args {
     arg_command: String,
     flag_max: Option<Version>,
     flag_features: Vec<String>,
-    flag_git: Option<String>,
 }
 
 fn main() {
@@ -95,9 +94,6 @@ fn main() {
         for feat in args.flag_features {
             cmd.arg(feat);
         }
-    }
-    if let Some(url) = args.flag_git {
-        cmd.arg(format!(" --git={}", &url));
     }
     match cmd.spawn() {
         Ok(mut c) => {
