@@ -1,6 +1,6 @@
 [package]
 name = "cargo-upstall"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["robert masen <r@robertmasen.pizza>"]
 description = "A wrapper around cargo install that handles upgrades instead of failing"
 license = "MIT"
