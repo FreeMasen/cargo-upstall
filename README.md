@@ -22,7 +22,7 @@ latest published version. If the two don't match we perform `cargo install [name
 move on.
 
 ## To Do
-- [] Add GitHub Crate Installs
-- [] Add GitLab Crate Installs
-- [] Add BitBucket Crate Installs
-- [] Apply lessons learned to `cargo install` itself by adding the `--update` flag
+- [ ] Add GitHub Crate Installs
+- [ ] Add GitLab Crate Installs
+- [ ] Add BitBucket Crate Installs
+- [ ] Apply lessons learned to `cargo install` itself by adding the `--update` flag
