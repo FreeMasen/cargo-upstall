@@ -6,26 +6,22 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 extern crate toml;
+extern crate cargo_upstall;
 
 use std::{
-    env::{var,home_dir},
-    fs::{read_to_string},
-    path::{PathBuf},
     process::{exit, Command as Cmd},
 };
 
 use docopt::Docopt;
 use semver::Version;
-use toml::{from_str};
 
-mod manifest;
-use manifest::*;
+use cargo_upstall::manifest::*;
 
 const USAGE: &str = r#"
 Upstall (update or install) a cargo package
 
 Usage:
-    cargo upstall <command> [options]
+    upstall <command> [options]
 
 Options:
     -h, --help           Show this message
@@ -179,34 +175,11 @@ fn get_crate_versions(url: &str) -> Result<Vec<Version>, reqwest::Error> {
 /// Get a list of currently installed commands located
 /// in the $CARGOHOME/.crates.toml
 fn get_installed_commands() -> Option<Vec<Command>> {
-    let base = get_cargo_path()?;
-    let toml_path = base.join(".crates.toml");
-    // If the crates.toml file doesn't exist
-    // we don't want to try an read it just send
-    // back an empty []
-    if !toml_path.exists() {
-        println!("Did not find installed commands list at {:?}", toml_path);
-        return Some(vec![])
-    }
-    if let Ok(toml) = read_to_string(&toml_path) {
-        if let Ok(installed) = from_str::<Installed>(&toml) {
-            Some(installed.commands())
-        } else {
+    match cargo_upstall::installed::get_installed_commands() {
+        Ok(installed) => Some(installed),
+        Err(e) => {
+            eprintln!("Error getting installed commands\n{}", e);
             None
         }
-
-    } else {
-        None
-    }
-}
-
-/// Get the cargo path, either from the environment
-/// variable `CARGOHOME` or the default `~/.cargo`
-fn get_cargo_path() -> Option<PathBuf> {
-    if let Ok(path) = var("CARGO_HOME") {
-        Some(PathBuf::from(path))
-    } else {
-        let hd = home_dir()?;
-        Some(hd.join(".cargo"))
     }
 }
